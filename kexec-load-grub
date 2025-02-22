@@ -131,6 +131,7 @@ grub_parse_entry() {
   entry_kernel_image=""
   entry_append=""
   entry_initrd=""
+  is_btrfs_subvol=1
 
    while read command args; do
     case "$command" in
@@ -142,11 +143,18 @@ grub_parse_entry() {
     'linux'|'linux16'|'linuxefi')
       while read image append; do
         entry_kernel_image="${GRUBPREFIX}$image"
+        if [[ "$entry_kernel_image" == /@* ]]; then
+          is_btrfs_subvol=0
+          entry_kernel_image="/${entry_kernel_image#/@*/}"
+        fi
         entry_append="$append"
       done <<< "$args"
       ;;
     'initrd'|'initrd16'|'initrdefi')
       entry_initrd="${GRUBPREFIX}$args"
+      if [ "$is_btrfs_subvol" -eq 0 ]; then
+          entry_initrd="/${entry_initrd#/@*/}"
+      fi
       ;;
     esac
   done <<< "$data"
